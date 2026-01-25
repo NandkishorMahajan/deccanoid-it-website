@@ -3,6 +3,9 @@ import { motion, useInView } from 'motion/react';
 import { Mail, Phone, MapPin, Send, CheckCircle } from 'lucide-react';
 import { useTheme } from '../theme/useTheme';
 import { AnimatedBackgroundCanvas } from './background/AnimatedBackgroundCanvas';
+import emailjs from '@emailjs/browser';
+
+type SubmitStatus = 'idle' | 'sending' | 'success' | 'error';
 
 export function Contact() {
   const { theme } = useTheme();
@@ -11,27 +14,210 @@ export function Contact() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
     company: '',
     service: '',
     message: ''
   });
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<SubmitStatus>('idle');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const sanitizeText = (value: string) => {
+    return value
+      .replace(/[\u0000-\u001F\u007F]/g, ' ')
+      .replace(/[<>]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
+  const sanitizeMultiline = (value: string) => {
+    return value
+      .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, ' ')
+      .replace(/[<>]/g, '')
+      .replace(/[ \t]+\n/g, '\n')
+      .trim();
+  };
+
+  const isValidEmail = (value: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  };
+
+  const isValidPhone = (value: string) => {
+    return /^[0-9+\-() ]{7,20}$/.test(value);
+  };
+
+  const formatDateTime = (d: Date) => {
+    return d.toLocaleString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate form submission
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
-      setFormData({
-        name: '',
-        email: '',
-        company: '',
-        service: '',
-        message: ''
-      });
-    }, 3000);
+
+    if (isSubmitting) return;
+
+    setErrorMessage(null);
+    setSubmitStatus('idle');
+
+    const name = sanitizeText(formData.name);
+    const email = sanitizeText(formData.email).toLowerCase();
+    const phone = sanitizeText(formData.phone);
+    const company = sanitizeText(formData.company);
+    const service = sanitizeText(formData.service);
+    const message = sanitizeMultiline(formData.message);
+
+    if (!name || name.length < 2) {
+      setErrorMessage('Please enter your full name.');
+      setSubmitStatus('error');
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setErrorMessage('Please enter a valid email address.');
+      setSubmitStatus('error');
+      return;
+    }
+    if (!isValidPhone(phone)) {
+      setErrorMessage('Please enter a valid phone number.');
+      setSubmitStatus('error');
+      return;
+    }
+    if (!service) {
+      setErrorMessage('Please select a service.');
+      setSubmitStatus('error');
+      return;
+    }
+    if (!message || message.length < 10) {
+      setErrorMessage('Please add a bit more detail about your project.');
+      setSubmitStatus('error');
+      return;
+    }
+
+    const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID as string | undefined;
+    const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID as string | undefined;
+    const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY as string | undefined;
+
+    if (!serviceId || !templateId || !publicKey) {
+      setErrorMessage('Email service is not configured. Please try again later.');
+      setSubmitStatus('error');
+      return;
+    }
+
+    // Pre-open WhatsApp window from the user gesture (avoids popup blockers).
+    const whatsappNumber = '919584777747';
+    let waWindow: Window | null = null;
+    try {
+      waWindow = window.open('about:blank', '_blank');
+    } catch {
+      waWindow = null;
+    }
+
+    setIsSubmitting(true);
+    setSubmitStatus('sending');
+
+    const submittedAt = formatDateTime(new Date());
+    const safeMessageForUrl = message.length > 1000 ? `${message.slice(0, 1000)}…` : message;
+
+    const whatsappText =
+      `🚀 New Contact Inquiry – DeccaNoid\n\n` +
+      `Name: ${name}\n` +
+      `Email: ${email}\n` +
+      `Phone: ${phone}\n` +
+      `Company: ${company || '—'}\n` +
+      `Service: ${service}\n\n` +
+      `Project Details:\n${safeMessageForUrl}\n\n` +
+      `Submitted On: ${submittedAt}`;
+
+    const waUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappText)}`;
+
+    const messageHtml =
+      `<div style="font-family: Arial, sans-serif; line-height: 1.6;">` +
+      `<h2 style="margin:0 0 12px;">New Contact Inquiry – DeccaNoid IT Solutions</h2>` +
+      `<table style="width:100%; border-collapse:collapse;">` +
+      `<tr><td style="padding:6px 0; width:180px;"><strong>Full Name</strong></td><td style="padding:6px 0;">${name}</td></tr>` +
+      `<tr><td style="padding:6px 0;"><strong>Email Address</strong></td><td style="padding:6px 0;">${email}</td></tr>` +
+      `<tr><td style="padding:6px 0;"><strong>Phone Number</strong></td><td style="padding:6px 0;">${phone}</td></tr>` +
+      `<tr><td style="padding:6px 0;"><strong>Company Name</strong></td><td style="padding:6px 0;">${company || '—'}</td></tr>` +
+      `<tr><td style="padding:6px 0;"><strong>Selected Service</strong></td><td style="padding:6px 0;">${service}</td></tr>` +
+      `</table>` +
+      `<h3 style="margin:16px 0 8px;">Project Details</h3>` +
+      `<div style="white-space:pre-wrap;">${safeMessageForUrl}</div>` +
+      `<p style="margin:16px 0 0;"><strong>Submitted On:</strong> ${submittedAt}</p>` +
+      `</div>`;
+
+    try {
+      await emailjs.send(
+        serviceId,
+        templateId,
+        {
+          subject: 'New Contact Inquiry – DeccaNoid IT Solutions',
+          to_email: 'deccanoid@gmail.com',
+          from_name: name,
+          from_email: email,
+          phone,
+          company: company || '—',
+          service,
+          project_details: message,
+          submitted_at: submittedAt,
+          message_html: messageHtml,
+        },
+        { publicKey }
+      );
+
+      setSubmitStatus('success');
+      setSubmitted(true);
+
+      // Trigger WhatsApp after successful email send.
+      if (waWindow && !waWindow.closed) {
+        try {
+          waWindow.location.href = waUrl;
+          waWindow.opener = null;
+        } catch {
+          // fallback
+          window.open(waUrl, '_blank', 'noopener,noreferrer');
+          try {
+            waWindow.close();
+          } catch {
+            // no-op
+          }
+        }
+      } else {
+        window.open(waUrl, '_blank', 'noopener,noreferrer');
+      }
+
+      setTimeout(() => {
+        setSubmitted(false);
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          company: '',
+          service: '',
+          message: ''
+        });
+        setSubmitStatus('idle');
+        setErrorMessage(null);
+      }, 3000);
+    } catch {
+      setSubmitStatus('error');
+      setErrorMessage('Something went wrong. Please try again.');
+      if (waWindow && !waWindow.closed) {
+        try {
+          waWindow.close();
+        } catch {
+          // no-op
+        }
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -223,6 +409,36 @@ export function Contact() {
                     />
                   </div>
 
+                  {/* Phone */}
+                  <div>
+                    <label htmlFor="phone" className={`block text-sm mb-2 ${
+                      theme === 'light' ? 'text-gray-700' : 'text-[var(--theme-text-secondary)]'
+                    }`}>
+                      Phone Number *
+                    </label>
+                    <motion.input
+                      type="tel"
+                      id="phone"
+                      name="phone"
+                      required
+                      value={formData.phone}
+                      onChange={handleChange}
+                      onFocus={() => setFocusedField('phone')}
+                      onBlur={() => setFocusedField(null)}
+                      animate={{
+                        scale: focusedField === 'phone' ? 1.02 : 1,
+                      }}
+                      className={`w-full px-4 py-3 rounded-xl border focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all ${
+                        theme === 'light'
+                          ? 'border-gray-200 bg-white text-black'
+                          : 'border-[var(--theme-border)] bg-[var(--theme-bg-primary)] text-white'
+                      }`}
+                      placeholder="+91 9584777747"
+                      inputMode="tel"
+                      autoComplete="tel"
+                    />
+                  </div>
+
                   {/* Company */}
                   <div>
                     <label htmlFor="company" className={`block text-sm mb-2 ${
@@ -315,13 +531,24 @@ export function Contact() {
                   </div>
 
                   {/* Submit Button */}
+                  {errorMessage && (
+                    <div className={`text-sm ${
+                      theme === 'light' ? 'text-red-600' : 'text-red-400'
+                    }`}>
+                      {errorMessage}
+                    </div>
+                  )}
                   <motion.button
                     type="submit"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="w-full px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-xl hover:shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 flex items-center justify-center gap-2"
+                    disabled={isSubmitting}
+                    aria-disabled={isSubmitting}
+                    className={`w-full px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-xl hover:shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 flex items-center justify-center gap-2 ${
+                      isSubmitting ? 'opacity-75' : ''
+                    }`}
                   >
-                    Send Message
+                    {submitStatus === 'sending' ? 'Sending...' : 'Send Message'}
                     <Send className="w-5 h-5" />
                   </motion.button>
                 </form>
