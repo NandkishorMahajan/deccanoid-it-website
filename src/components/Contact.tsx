@@ -3,7 +3,6 @@ import { motion, useInView } from 'motion/react';
 import { Mail, Phone, MapPin, Send, CheckCircle } from 'lucide-react';
 import { useTheme } from '../theme/useTheme';
 import { AnimatedBackgroundCanvas } from './background/AnimatedBackgroundCanvas';
-import emailjs from '@emailjs/browser';
 
 type SubmitStatus = 'idle' | 'sending' | 'success' | 'error';
 
@@ -100,16 +99,6 @@ export function Contact() {
       return;
     }
 
-    const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID as string | undefined;
-    const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID as string | undefined;
-    const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY as string | undefined;
-
-    if (!serviceId || !templateId || !publicKey) {
-      setErrorMessage('Email service is not configured. Please try again later.');
-      setSubmitStatus('error');
-      return;
-    }
-
     // Pre-open WhatsApp window from the user gesture (avoids popup blockers).
     const whatsappNumber = '919584777747';
     let waWindow: Window | null = null;
@@ -137,39 +126,29 @@ export function Contact() {
 
     const waUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappText)}`;
 
-    const messageHtml =
-      `<div style="font-family: Arial, sans-serif; line-height: 1.6;">` +
-      `<h2 style="margin:0 0 12px;">New Contact Inquiry – DeccaNoid IT Solutions</h2>` +
-      `<table style="width:100%; border-collapse:collapse;">` +
-      `<tr><td style="padding:6px 0; width:180px;"><strong>Full Name</strong></td><td style="padding:6px 0;">${name}</td></tr>` +
-      `<tr><td style="padding:6px 0;"><strong>Email Address</strong></td><td style="padding:6px 0;">${email}</td></tr>` +
-      `<tr><td style="padding:6px 0;"><strong>Phone Number</strong></td><td style="padding:6px 0;">${phone}</td></tr>` +
-      `<tr><td style="padding:6px 0;"><strong>Company Name</strong></td><td style="padding:6px 0;">${company || '—'}</td></tr>` +
-      `<tr><td style="padding:6px 0;"><strong>Selected Service</strong></td><td style="padding:6px 0;">${service}</td></tr>` +
-      `</table>` +
-      `<h3 style="margin:16px 0 8px;">Project Details</h3>` +
-      `<div style="white-space:pre-wrap;">${safeMessageForUrl}</div>` +
-      `<p style="margin:16px 0 0;"><strong>Submitted On:</strong> ${submittedAt}</p>` +
-      `</div>`;
-
     try {
-      await emailjs.send(
-        serviceId,
-        templateId,
-        {
-          subject: 'New Contact Inquiry – DeccaNoid IT Solutions',
-          to_email: 'deccanoid@gmail.com',
+      console.log('Sending email via backend API...');
+      const response = await fetch('http://localhost:5000/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           from_name: name,
           from_email: email,
           phone,
           company: company || '—',
           service,
           project_details: message,
-          submitted_at: submittedAt,
-          message_html: messageHtml,
-        },
-        { publicKey }
-      );
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Email sent successfully:', data);
 
       setSubmitStatus('success');
       setSubmitted(true);
@@ -205,9 +184,10 @@ export function Contact() {
         setSubmitStatus('idle');
         setErrorMessage(null);
       }, 3000);
-    } catch {
+    } catch (error) {
+      console.error('Email sending error:', error);
       setSubmitStatus('error');
-      setErrorMessage('Something went wrong. Please try again.');
+      setErrorMessage('Failed to send email. Please try again or contact support.');
       if (waWindow && !waWindow.closed) {
         try {
           waWindow.close();
