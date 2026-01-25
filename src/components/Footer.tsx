@@ -1,16 +1,21 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { 
-  Github, 
-  Linkedin, 
-  Twitter, 
-  Mail, 
-  Phone, 
+import { FaWhatsapp } from 'react-icons/fa';
+import { useTheme } from '../theme/useTheme';
+
+import {
+  Github,
+  Linkedin,
+  Twitter,
+  Mail,
+  Phone,
   MapPin,
-  ArrowUp
+  ArrowUp,
+  MessageCircle
 } from 'lucide-react';
 
 export function Footer() {
+  const { theme } = useTheme();
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -43,13 +48,35 @@ export function Footer() {
   };
 
   const socialLinks = [
-    { icon: <Linkedin className="w-5 h-5" />, href: '#', label: 'LinkedIn' },
-    { icon: <Twitter className="w-5 h-5" />, href: '#', label: 'Twitter' },
-    { icon: <Github className="w-5 h-5" />, href: '#', label: 'GitHub' }
+    {
+      icon: <Linkedin className="w-5 h-5" />,
+      href: 'https://www.linkedin.com/company/deccanoid-it-solutions-and-services',
+      label: 'LinkedIn'
+    },
+    {
+      icon: <Twitter className="w-5 h-5" />,
+      href: 'https://twitter.com/', // optional / later update
+      label: 'Twitter'
+    },
+    {
+      icon: <Mail className="w-5 h-5" />,
+      href: 'mailto:hello@deccanoid.com',
+      label: 'Email'
+    },
+    {
+      icon: <FaWhatsapp className="w-5 h-5 text-green-500" />,
+      href: 'https://wa.me/919584777747',
+      label: 'WhatsApp'
+    }
+
   ];
 
+
   return (
-    <footer className="relative bg-gradient-to-b from-gray-900 to-black text-white overflow-hidden">
+    <footer className={`relative overflow-hidden transition-colors duration-500 ${theme === 'light'
+        ? 'bg-gradient-to-b from-gray-900 to-black text-white'
+        : 'bg-gradient-to-b from-[var(--theme-bg-primary)] to-black text-white'
+      }`}>
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
@@ -68,35 +95,43 @@ export function Footer() {
               transition={{ duration: 0.6 }}
             >
               <div className="flex items-center gap-3 mb-4">
-                <div className="relative">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 via-blue-500 to-cyan-400 flex items-center justify-center">
-                    <div className="w-6 h-6">
-                      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="white" strokeWidth="2" strokeLinejoin="round"/>
-                        <path d="M2 17L12 22L22 17" stroke="white" strokeWidth="2" strokeLinejoin="round"/>
-                        <path d="M2 12L12 17L22 12" stroke="white" strokeWidth="2" strokeLinejoin="round"/>
-                      </svg>
-                    </div>
-                  </div>
+                {/* Logo from public */}
+                <div className="w-14 h-14 flex items-center justify-center">
+                  <img
+                    src="/favi.png"
+                    alt="DeccaNoid Logo"
+                    className="w-14 h-14 object-contain"
+                  />
                 </div>
+
                 <div>
-                  <div className="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                  <div className="text-xl md:text-2xl font-bold leading-tight bg-gradient-to-r from-blue-600 to-cyan-500 dark:from-blue-400 dark:to-cyan-400 bg-clip-text text-transparent">
                     DeccaNoid
                   </div>
-                  <div className="text-xs text-gray-400">IT Solutions & Services</div>
+                  <div
+                    className={`text-sm ${theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+                      }`}
+                  >
+                    IT Solutions & Services
+                  </div>
                 </div>
+
               </div>
-              <p className="text-gray-400 mb-6 max-w-xs">
-                Transforming businesses through innovative technology solutions. 
+
+              <p className={`mb-6 max-w-xs ${theme === 'light' ? 'text-gray-400' : 'text-[var(--theme-text-secondary)]'
+                }`}>
+                Transforming businesses through innovative technology solutions.
                 Your partner in digital excellence.
               </p>
-              
+
               {/* Social Links */}
               <div className="flex gap-3">
                 {socialLinks.map((social, index) => (
                   <motion.a
                     key={index}
                     href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     whileHover={{ scale: 1.1, y: -2 }}
                     whileTap={{ scale: 0.95 }}
                     className="w-10 h-10 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors border border-white/10"
@@ -104,6 +139,7 @@ export function Footer() {
                   >
                     {social.icon}
                   </motion.a>
+
                 ))}
               </div>
             </motion.div>
@@ -111,7 +147,8 @@ export function Footer() {
 
           {/* Company */}
           <div>
-            <h4 className="text-sm mb-4 text-gray-300">Company</h4>
+            <h4 className={`text-sm mb-4 ${theme === 'light' ? 'text-gray-300' : 'text-[var(--theme-text-secondary)]'
+              }`}>Company</h4>
             <ul className="space-y-3">
               {footerLinks.company.map((link, index) => (
                 <motion.li
@@ -123,7 +160,10 @@ export function Footer() {
                 >
                   <a
                     href={link.href}
-                    className="text-sm text-gray-400 hover:text-blue-400 transition-colors"
+                    className={`text-sm transition-colors ${theme === 'light'
+                        ? 'text-gray-400 hover:text-blue-400'
+                        : 'text-[var(--theme-text-secondary)] hover:text-blue-400'
+                      }`}
                   >
                     {link.label}
                   </a>
@@ -134,7 +174,8 @@ export function Footer() {
 
           {/* Services */}
           <div>
-            <h4 className="text-sm mb-4 text-gray-300">Services</h4>
+            <h4 className={`text-sm mb-4 ${theme === 'light' ? 'text-gray-300' : 'text-[var(--theme-text-secondary)]'
+              }`}>Services</h4>
             <ul className="space-y-3">
               {footerLinks.services.map((link, index) => (
                 <motion.li
@@ -146,7 +187,10 @@ export function Footer() {
                 >
                   <a
                     href={link.href}
-                    className="text-sm text-gray-400 hover:text-blue-400 transition-colors"
+                    className={`text-sm transition-colors ${theme === 'light'
+                        ? 'text-gray-400 hover:text-blue-400'
+                        : 'text-[var(--theme-text-secondary)] hover:text-blue-400'
+                      }`}
                   >
                     {link.label}
                   </a>
@@ -157,7 +201,8 @@ export function Footer() {
 
           {/* Resources */}
           <div>
-            <h4 className="text-sm mb-4 text-gray-300">Resources</h4>
+            <h4 className={`text-sm mb-4 ${theme === 'light' ? 'text-gray-300' : 'text-[var(--theme-text-secondary)]'
+              }`}>Resources</h4>
             <ul className="space-y-3">
               {footerLinks.resources.map((link, index) => (
                 <motion.li
@@ -169,7 +214,10 @@ export function Footer() {
                 >
                   <a
                     href={link.href}
-                    className="text-sm text-gray-400 hover:text-blue-400 transition-colors"
+                    className={`text-sm transition-colors ${theme === 'light'
+                        ? 'text-gray-400 hover:text-blue-400'
+                        : 'text-[var(--theme-text-secondary)] hover:text-blue-400'
+                      }`}
                   >
                     {link.label}
                   </a>
@@ -180,7 +228,8 @@ export function Footer() {
 
           {/* Legal */}
           <div>
-            <h4 className="text-sm mb-4 text-gray-300">Legal</h4>
+            <h4 className={`text-sm mb-4 ${theme === 'light' ? 'text-gray-300' : 'text-[var(--theme-text-secondary)]'
+              }`}>Legal</h4>
             <ul className="space-y-3">
               {footerLinks.legal.map((link, index) => (
                 <motion.li
@@ -192,7 +241,10 @@ export function Footer() {
                 >
                   <a
                     href={link.href}
-                    className="text-sm text-gray-400 hover:text-blue-400 transition-colors"
+                    className={`text-sm transition-colors ${theme === 'light'
+                        ? 'text-gray-400 hover:text-blue-400'
+                        : 'text-[var(--theme-text-secondary)] hover:text-blue-400'
+                      }`}
                   >
                     {link.label}
                   </a>
@@ -208,12 +260,15 @@ export function Footer() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="py-12 border-t border-white/10"
+          className={`py-12 border-t ${theme === 'light' ? 'border-white/10' : 'border-[var(--theme-border)]'
+            }`}
         >
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div>
-              <h4 className="text-xl mb-2">Stay Updated</h4>
-              <p className="text-gray-400 text-sm">
+              <h4 className={`text-xl mb-2 ${theme === 'light' ? 'text-white' : 'text-white'
+                }`}>Stay Updated</h4>
+              <p className={`text-sm ${theme === 'light' ? 'text-gray-400' : 'text-[var(--theme-text-secondary)]'
+                }`}>
                 Subscribe to our newsletter for the latest tech insights
               </p>
             </div>
@@ -221,7 +276,10 @@ export function Footer() {
               <input
                 type="email"
                 placeholder="Enter your email"
-                className="flex-1 md:w-64 px-4 py-3 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:border-blue-500 transition-colors"
+                className={`flex-1 md:w-64 px-4 py-3 rounded-lg focus:outline-none focus:border-blue-500 transition-colors ${theme === 'light'
+                    ? 'bg-white/5 border border-white/10 text-black'
+                    : 'bg-[var(--theme-bg-primary)] border border-[var(--theme-border)] text-white'
+                  }`}
               />
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -237,9 +295,9 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="py-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="text-sm text-gray-400">
-            © 2026 DeccaNoid IT Solutions & Services. All rights reserved.
+            © 2022 DeccaNoid IT Solutions & Services. All rights reserved.
           </div>
-          
+
           <div className="flex items-center gap-6 text-sm text-gray-400">
             <div className="flex items-center gap-2">
               <Mail className="w-4 h-4" />
@@ -247,7 +305,7 @@ export function Footer() {
             </div>
             <div className="flex items-center gap-2">
               <Phone className="w-4 h-4" />
-              +1 (555) 123-4567
+              +91 9584777747
             </div>
           </div>
         </div>

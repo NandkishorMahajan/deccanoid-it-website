@@ -8,8 +8,9 @@ import { Blog } from './components/Blog';
 import { Contact } from './components/Contact';
 import { Navigation } from './components/Navigation';
 import { Footer } from './components/Footer';
+import { ThemeProvider } from './theme/ThemeProvider';
 
-export default function App() {
+function AppContent() {
   const [activeSection, setActiveSection] = useState('home');
 
   useEffect(() => {
@@ -34,7 +35,7 @@ export default function App() {
   }, []);
 
   return (
-    <div className="bg-white overflow-hidden">
+    <div className="overflow-hidden transition-colors duration-300" style={{ backgroundColor: 'var(--theme-bg-primary, #ffffff)' }}>
       <Navigation activeSection={activeSection} />
       
       <main>
@@ -66,5 +67,13 @@ export default function App() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider defaultTheme="light" storageKey="theme-preference">
+      <AppContent />
+    </ThemeProvider>
   );
 }

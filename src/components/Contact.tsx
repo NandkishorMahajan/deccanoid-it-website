@@ -1,8 +1,11 @@
 import React, { useRef, useState } from 'react';
 import { motion, useInView } from 'motion/react';
 import { Mail, Phone, MapPin, Send, CheckCircle } from 'lucide-react';
+import { useTheme } from '../theme/useTheme';
+import { AnimatedBackgroundCanvas } from './background/AnimatedBackgroundCanvas';
 
 export function Contact() {
+  const { theme } = useTheme();
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, amount: 0.2 });
   const [formData, setFormData] = useState({
@@ -48,19 +51,24 @@ export function Contact() {
     {
       icon: <Phone className="w-6 h-6" />,
       label: 'Phone',
-      value: '+1 (555) 123-4567',
+      value: '+91 9584777747',
       gradient: 'from-purple-600 to-pink-500'
     },
     {
       icon: <MapPin className="w-6 h-6" />,
       label: 'Headquarters',
-      value: 'San Francisco, CA',
+      value: 'Indore, MadhyaPradesh, India',
       gradient: 'from-green-600 to-teal-500'
     }
   ];
 
   return (
-    <div className="relative py-24 bg-gradient-to-b from-gray-50 to-white overflow-hidden">
+    <div className={`relative py-24 overflow-hidden transition-colors duration-300 ${
+      theme === 'light'
+        ? 'bg-gradient-to-b from-gray-50 to-white'
+        : 'bg-gradient-to-b from-[var(--theme-bg-primary)] to-[var(--theme-bg-secondary)]'
+    }`}>
+      <AnimatedBackgroundCanvas intensity="subtle" />
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
@@ -80,18 +88,44 @@ export function Contact() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={isInView ? { opacity: 1, scale: 1 } : {}}
             transition={{ duration: 0.5 }}
-            className="inline-block px-4 py-2 bg-blue-100 text-blue-600 rounded-full text-sm mb-4"
+            className={`inline-block px-4 py-2 rounded-full text-sm mb-4 ${
+              theme === 'light'
+                ? 'bg-blue-100 text-blue-600'
+                : 'bg-blue-900/40 text-blue-300'
+            }`}
           >
             Get In Touch
           </motion.div>
-          <h2 className="text-4xl md:text-5xl lg:text-6xl mb-6">
+          <h2 className={`text-4xl md:text-5xl lg:text-6xl mb-6 leading-[1.15] ${
+            theme === 'light' ? 'text-black' : 'text-white'
+          }`}>
             <span className="block">Let's Build</span>
-            <span className="block bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
+
+            <span
+              className="block"
+              style={{
+                background: theme === 'light'
+                  ? 'linear-gradient(90deg, #2563eb, #22d3ee)'
+                  : 'none',
+                backgroundClip: theme === 'light' ? 'text' : 'unset',
+                WebkitBackgroundClip: theme === 'light' ? 'text' : 'unset',
+                color: theme === 'light'
+                  ? 'transparent'
+                  : '#00dcff',
+                WebkitTextFillColor: theme === 'light'
+                  ? 'transparent'
+                  : 'unset',
+                paddingBottom: '0.20em'
+              }}
+            >
               Something Amazing
             </span>
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Ready to transform your business? Our team of experts is here to help you 
+
+          <p className={`text-xl max-w-3xl mx-auto ${
+            theme === 'light' ? 'text-gray-600' : 'text-gray-300'
+          }`}>
+            Ready to transform your business? Our team of experts is here to help you
             achieve your digital goals
           </p>
         </motion.div>
@@ -103,7 +137,11 @@ export function Contact() {
             animate={isInView ? { opacity: 1, x: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <div className="bg-white rounded-2xl p-8 shadow-xl border border-gray-100">
+            <div className={`rounded-2xl p-8 shadow-xl transition-colors duration-300 ${
+              theme === 'light'
+                ? 'bg-white border border-gray-100'
+                : 'bg-[var(--theme-bg-secondary)] border border-[var(--theme-border)]'
+            }`}>
               {submitted ? (
                 <motion.div
                   initial={{ scale: 0.8, opacity: 0 }}
@@ -118,8 +156,12 @@ export function Contact() {
                   >
                     <CheckCircle className="w-10 h-10 text-green-600" />
                   </motion.div>
-                  <h3 className="text-2xl mb-2">Thank You!</h3>
-                  <p className="text-gray-600">
+                  <h3 className={`text-2xl mb-2 ${
+                    theme === 'light' ? 'text-black' : 'text-white'
+                  }`}>Thank You!</h3>
+                  <p className={`${
+                    theme === 'light' ? 'text-gray-600' : 'text-gray-300'
+                  }`}>
                     We've received your message and will get back to you within 24 hours.
                   </p>
                 </motion.div>
@@ -127,7 +169,9 @@ export function Contact() {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {/* Name */}
                   <div>
-                    <label htmlFor="name" className="block text-sm mb-2 text-gray-700">
+                    <label htmlFor="name" className={`block text-sm mb-2 ${
+                      theme === 'light' ? 'text-gray-700' : 'text-[var(--theme-text-secondary)]'
+                    }`}>
                       Full Name *
                     </label>
                     <motion.input
@@ -142,14 +186,20 @@ export function Contact() {
                       animate={{
                         scale: focusedField === 'name' ? 1.02 : 1,
                       }}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      className={`w-full px-4 py-3 rounded-xl border focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all ${
+                        theme === 'light'
+                          ? 'border-gray-200 bg-white text-black'
+                          : 'border-[var(--theme-border)] bg-[var(--theme-bg-primary)] text-white'
+                      }`}
                       placeholder="John Doe"
                     />
                   </div>
 
                   {/* Email */}
                   <div>
-                    <label htmlFor="email" className="block text-sm mb-2 text-gray-700">
+                    <label htmlFor="email" className={`block text-sm mb-2 ${
+                      theme === 'light' ? 'text-gray-700' : 'text-[var(--theme-text-secondary)]'
+                    }`}>
                       Email Address *
                     </label>
                     <motion.input
@@ -164,14 +214,20 @@ export function Contact() {
                       animate={{
                         scale: focusedField === 'email' ? 1.02 : 1,
                       }}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      className={`w-full px-4 py-3 rounded-xl border focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all ${
+                        theme === 'light'
+                          ? 'border-gray-200 bg-white text-black'
+                          : 'border-[var(--theme-border)] bg-[var(--theme-bg-primary)] text-white'
+                      }`}
                       placeholder="john@company.com"
                     />
                   </div>
 
                   {/* Company */}
                   <div>
-                    <label htmlFor="company" className="block text-sm mb-2 text-gray-700">
+                    <label htmlFor="company" className={`block text-sm mb-2 ${
+                      theme === 'light' ? 'text-gray-700' : 'text-[var(--theme-text-secondary)]'
+                    }`}>
                       Company Name
                     </label>
                     <motion.input
@@ -185,14 +241,20 @@ export function Contact() {
                       animate={{
                         scale: focusedField === 'company' ? 1.02 : 1,
                       }}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      className={`w-full px-4 py-3 rounded-xl border focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all ${
+                        theme === 'light'
+                          ? 'border-gray-200 bg-white text-black'
+                          : 'border-[var(--theme-border)] bg-[var(--theme-bg-primary)] text-white'
+                      }`}
                       placeholder="Your Company"
                     />
                   </div>
 
                   {/* Service */}
                   <div>
-                    <label htmlFor="service" className="block text-sm mb-2 text-gray-700">
+                    <label htmlFor="service" className={`block text-sm mb-2 ${
+                      theme === 'light' ? 'text-gray-700' : 'text-[var(--theme-text-secondary)]'
+                    }`}>
                       Service Interested In *
                     </label>
                     <motion.select
@@ -206,7 +268,11 @@ export function Contact() {
                       animate={{
                         scale: focusedField === 'service' ? 1.02 : 1,
                       }}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      className={`w-full px-4 py-3 rounded-xl border focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all ${
+                        theme === 'light'
+                          ? 'border-gray-200 bg-white text-black'
+                          : 'border-[var(--theme-border)] bg-[var(--theme-bg-primary)] text-white'
+                      }`}
                     >
                       <option value="">Select a service</option>
                       <option value="cloud">Cloud Solutions</option>
@@ -222,7 +288,9 @@ export function Contact() {
 
                   {/* Message */}
                   <div>
-                    <label htmlFor="message" className="block text-sm mb-2 text-gray-700">
+                    <label htmlFor="message" className={`block text-sm mb-2 ${
+                      theme === 'light' ? 'text-gray-700' : 'text-[var(--theme-text-secondary)]'
+                    }`}>
                       Project Details *
                     </label>
                     <motion.textarea
@@ -237,7 +305,11 @@ export function Contact() {
                         scale: focusedField === 'message' ? 1.02 : 1,
                       }}
                       rows={4}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all resize-none"
+                      className={`w-full px-4 py-3 rounded-xl border focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all resize-none ${
+                        theme === 'light'
+                          ? 'border-gray-200 bg-white text-black'
+                          : 'border-[var(--theme-border)] bg-[var(--theme-bg-primary)] text-white'
+                      }`}
                       placeholder="Tell us about your project..."
                     />
                   </div>
@@ -273,7 +345,11 @@ export function Contact() {
                   animate={isInView ? { opacity: 1, y: 0 } : {}}
                   transition={{ duration: 0.5, delay: 0.5 + index * 0.1 }}
                   whileHover={{ x: 8 }}
-                  className="group bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300"
+                  className={`group rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 ${
+                    theme === 'light'
+                      ? 'bg-white border border-gray-100'
+                      : 'bg-[var(--theme-bg-secondary)] border border-[var(--theme-border)]'
+                  }`}
                 >
                   <div className="flex items-center gap-4">
                     <motion.div
@@ -284,8 +360,12 @@ export function Contact() {
                       {info.icon}
                     </motion.div>
                     <div>
-                      <div className="text-sm text-gray-500 mb-1">{info.label}</div>
-                      <div className="text-lg">{info.value}</div>
+                      <div className={`text-sm mb-1 ${
+                        theme === 'light' ? 'text-gray-500' : 'text-[var(--theme-text-secondary)]'
+                      }`}>{info.label}</div>
+                      <div className={`text-lg ${
+                        theme === 'light' ? 'text-black' : 'text-white'
+                      }`}>{info.value}</div>
                     </div>
                   </div>
                 </motion.div>
@@ -327,11 +407,19 @@ export function Contact() {
               initial={{ opacity: 0, y: 20 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5, delay: 1.3 }}
-              className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 text-center"
+              className={`rounded-2xl p-6 shadow-lg transition-colors duration-300 ${
+                theme === 'light'
+                  ? 'bg-white border border-gray-100'
+                  : 'bg-[var(--theme-bg-secondary)] border border-[var(--theme-border)]'
+              }`}
             >
               <div className="text-4xl mb-2">⚡</div>
-              <div className="text-lg mb-1">Lightning Fast Response</div>
-              <div className="text-gray-600">We typically respond within 2-4 hours</div>
+              <div className={`text-lg mb-1 ${
+                theme === 'light' ? 'text-black' : 'text-white'
+              }`}>Lightning Fast Response</div>
+              <div className={`${
+                theme === 'light' ? 'text-gray-600' : 'text-gray-300'
+              }`}>We typically respond within 2-4 hours</div>
             </motion.div>
           </motion.div>
         </div>
