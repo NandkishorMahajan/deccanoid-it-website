@@ -1,34 +1,203 @@
 import React, { useRef, useState } from 'react';
 import { motion, useInView } from 'motion/react';
 import { Mail, Phone, MapPin, Send, CheckCircle } from 'lucide-react';
+import { useTheme } from '../theme/useTheme';
+import { AnimatedBackgroundCanvas } from './background/AnimatedBackgroundCanvas';
+
+type SubmitStatus = 'idle' | 'sending' | 'success' | 'error';
 
 export function Contact() {
+  const { theme } = useTheme();
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, amount: 0.2 });
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
     company: '',
     service: '',
     message: ''
   });
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<SubmitStatus>('idle');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const sanitizeText = (value: string) => {
+    return value
+      .replace(/[\u0000-\u001F\u007F]/g, ' ')
+      .replace(/[<>]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
+  const sanitizeMultiline = (value: string) => {
+    return value
+      .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, ' ')
+      .replace(/[<>]/g, '')
+      .replace(/[ \t]+\n/g, '\n')
+      .trim();
+  };
+
+  const isValidEmail = (value: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  };
+
+  const isValidPhone = (value: string) => {
+    return /^[0-9+\-() ]{7,20}$/.test(value);
+  };
+
+  const formatDateTime = (d: Date) => {
+    return d.toLocaleString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate form submission
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
-      setFormData({
-        name: '',
-        email: '',
-        company: '',
-        service: '',
-        message: ''
+
+    if (isSubmitting) return;
+
+    setErrorMessage(null);
+    setSubmitStatus('idle');
+
+    const name = sanitizeText(formData.name);
+    const email = sanitizeText(formData.email).toLowerCase();
+    const phone = sanitizeText(formData.phone);
+    const company = sanitizeText(formData.company);
+    const service = sanitizeText(formData.service);
+    const message = sanitizeMultiline(formData.message);
+
+    if (!name || name.length < 2) {
+      setErrorMessage('Please enter your full name.');
+      setSubmitStatus('error');
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setErrorMessage('Please enter a valid email address.');
+      setSubmitStatus('error');
+      return;
+    }
+    if (!isValidPhone(phone)) {
+      setErrorMessage('Please enter a valid phone number.');
+      setSubmitStatus('error');
+      return;
+    }
+    if (!service) {
+      setErrorMessage('Please select a service.');
+      setSubmitStatus('error');
+      return;
+    }
+    if (!message || message.length < 10) {
+      setErrorMessage('Please add a bit more detail about your project.');
+      setSubmitStatus('error');
+      return;
+    }
+
+    // Pre-open WhatsApp window from the user gesture (avoids popup blockers).
+    const whatsappNumber = '919584777747';
+    let waWindow: Window | null = null;
+    try {
+      waWindow = window.open('about:blank', '_blank');
+    } catch {
+      waWindow = null;
+    }
+
+    setIsSubmitting(true);
+    setSubmitStatus('sending');
+
+    const submittedAt = formatDateTime(new Date());
+    const safeMessageForUrl = message.length > 1000 ? `${message.slice(0, 1000)}…` : message;
+
+    const whatsappText =
+      `🚀 New Contact Inquiry – DeccaNoid\n\n` +
+      `Name: ${name}\n` +
+      `Email: ${email}\n` +
+      `Phone: ${phone}\n` +
+      `Company: ${company || '—'}\n` +
+      `Service: ${service}\n\n` +
+      `Project Details:\n${safeMessageForUrl}\n\n` +
+      `Submitted On: ${submittedAt}`;
+
+    const waUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappText)}`;
+
+    try {
+      console.log('Sending email via backend API...');
+      const response = await fetch('http://localhost:5000/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from_name: name,
+          from_email: email,
+          phone,
+          company: company || '—',
+          service,
+          project_details: message,
+        }),
       });
-    }, 3000);
+
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Email sent successfully:', data);
+
+      setSubmitStatus('success');
+      setSubmitted(true);
+
+      // Trigger WhatsApp after successful email send.
+      if (waWindow && !waWindow.closed) {
+        try {
+          waWindow.location.href = waUrl;
+          waWindow.opener = null;
+        } catch {
+          // fallback
+          window.open(waUrl, '_blank', 'noopener,noreferrer');
+          try {
+            waWindow.close();
+          } catch {
+            // no-op
+          }
+        }
+      } else {
+        window.open(waUrl, '_blank', 'noopener,noreferrer');
+      }
+
+      setTimeout(() => {
+        setSubmitted(false);
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          company: '',
+          service: '',
+          message: ''
+        });
+        setSubmitStatus('idle');
+        setErrorMessage(null);
+      }, 3000);
+    } catch (error) {
+      console.error('Email sending error:', error);
+      setSubmitStatus('error');
+      setErrorMessage('Failed to send email. Please try again or contact support.');
+      if (waWindow && !waWindow.closed) {
+        try {
+          waWindow.close();
+        } catch {
+          // no-op
+        }
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -48,19 +217,24 @@ export function Contact() {
     {
       icon: <Phone className="w-6 h-6" />,
       label: 'Phone',
-      value: '+1 (555) 123-4567',
+      value: '+91 9584777747',
       gradient: 'from-purple-600 to-pink-500'
     },
     {
       icon: <MapPin className="w-6 h-6" />,
       label: 'Headquarters',
-      value: 'San Francisco, CA',
+      value: 'Indore, MadhyaPradesh, India',
       gradient: 'from-green-600 to-teal-500'
     }
   ];
 
   return (
-    <div className="relative py-24 bg-gradient-to-b from-gray-50 to-white overflow-hidden">
+    <div className={`relative py-24 overflow-hidden transition-colors duration-300 ${
+      theme === 'light'
+        ? 'bg-gradient-to-b from-gray-50 to-white'
+        : 'bg-gradient-to-b from-[var(--theme-bg-primary)] to-[var(--theme-bg-secondary)]'
+    }`}>
+      <AnimatedBackgroundCanvas intensity="subtle" />
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
@@ -80,18 +254,44 @@ export function Contact() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={isInView ? { opacity: 1, scale: 1 } : {}}
             transition={{ duration: 0.5 }}
-            className="inline-block px-4 py-2 bg-blue-100 text-blue-600 rounded-full text-sm mb-4"
+            className={`inline-block px-4 py-2 rounded-full text-sm mb-4 ${
+              theme === 'light'
+                ? 'bg-blue-100 text-blue-600'
+                : 'bg-blue-900/40 text-blue-300'
+            }`}
           >
             Get In Touch
           </motion.div>
-          <h2 className="text-4xl md:text-5xl lg:text-6xl mb-6">
+          <h2 className={`text-4xl md:text-5xl lg:text-6xl mb-6 leading-[1.15] ${
+            theme === 'light' ? 'text-black' : 'text-white'
+          }`}>
             <span className="block">Let's Build</span>
-            <span className="block bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
+
+            <span
+              className="block"
+              style={{
+                background: theme === 'light'
+                  ? 'linear-gradient(90deg, #2563eb, #22d3ee)'
+                  : 'none',
+                backgroundClip: theme === 'light' ? 'text' : 'unset',
+                WebkitBackgroundClip: theme === 'light' ? 'text' : 'unset',
+                color: theme === 'light'
+                  ? 'transparent'
+                  : '#00dcff',
+                WebkitTextFillColor: theme === 'light'
+                  ? 'transparent'
+                  : 'unset',
+                paddingBottom: '0.20em'
+              }}
+            >
               Something Amazing
             </span>
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Ready to transform your business? Our team of experts is here to help you 
+
+          <p className={`text-xl max-w-3xl mx-auto ${
+            theme === 'light' ? 'text-gray-600' : 'text-gray-300'
+          }`}>
+            Ready to transform your business? Our team of experts is here to help you
             achieve your digital goals
           </p>
         </motion.div>
@@ -103,7 +303,11 @@ export function Contact() {
             animate={isInView ? { opacity: 1, x: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <div className="bg-white rounded-2xl p-8 shadow-xl border border-gray-100">
+            <div className={`rounded-2xl p-8 shadow-xl transition-colors duration-300 ${
+              theme === 'light'
+                ? 'bg-white border border-gray-100'
+                : 'bg-[var(--theme-bg-secondary)] border border-[var(--theme-border)]'
+            }`}>
               {submitted ? (
                 <motion.div
                   initial={{ scale: 0.8, opacity: 0 }}
@@ -118,8 +322,12 @@ export function Contact() {
                   >
                     <CheckCircle className="w-10 h-10 text-green-600" />
                   </motion.div>
-                  <h3 className="text-2xl mb-2">Thank You!</h3>
-                  <p className="text-gray-600">
+                  <h3 className={`text-2xl mb-2 ${
+                    theme === 'light' ? 'text-black' : 'text-white'
+                  }`}>Thank You!</h3>
+                  <p className={`${
+                    theme === 'light' ? 'text-gray-600' : 'text-gray-300'
+                  }`}>
                     We've received your message and will get back to you within 24 hours.
                   </p>
                 </motion.div>
@@ -127,7 +335,9 @@ export function Contact() {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {/* Name */}
                   <div>
-                    <label htmlFor="name" className="block text-sm mb-2 text-gray-700">
+                    <label htmlFor="name" className={`block text-sm mb-2 ${
+                      theme === 'light' ? 'text-gray-700' : 'text-[var(--theme-text-secondary)]'
+                    }`}>
                       Full Name *
                     </label>
                     <motion.input
@@ -142,14 +352,20 @@ export function Contact() {
                       animate={{
                         scale: focusedField === 'name' ? 1.02 : 1,
                       }}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      className={`w-full px-4 py-3 rounded-xl border focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all ${
+                        theme === 'light'
+                          ? 'border-gray-200 bg-white text-black'
+                          : 'border-[var(--theme-border)] bg-[var(--theme-bg-primary)] text-white'
+                      }`}
                       placeholder="John Doe"
                     />
                   </div>
 
                   {/* Email */}
                   <div>
-                    <label htmlFor="email" className="block text-sm mb-2 text-gray-700">
+                    <label htmlFor="email" className={`block text-sm mb-2 ${
+                      theme === 'light' ? 'text-gray-700' : 'text-[var(--theme-text-secondary)]'
+                    }`}>
                       Email Address *
                     </label>
                     <motion.input
@@ -164,14 +380,50 @@ export function Contact() {
                       animate={{
                         scale: focusedField === 'email' ? 1.02 : 1,
                       }}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      className={`w-full px-4 py-3 rounded-xl border focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all ${
+                        theme === 'light'
+                          ? 'border-gray-200 bg-white text-black'
+                          : 'border-[var(--theme-border)] bg-[var(--theme-bg-primary)] text-white'
+                      }`}
                       placeholder="john@company.com"
+                    />
+                  </div>
+
+                  {/* Phone */}
+                  <div>
+                    <label htmlFor="phone" className={`block text-sm mb-2 ${
+                      theme === 'light' ? 'text-gray-700' : 'text-[var(--theme-text-secondary)]'
+                    }`}>
+                      Phone Number *
+                    </label>
+                    <motion.input
+                      type="tel"
+                      id="phone"
+                      name="phone"
+                      required
+                      value={formData.phone}
+                      onChange={handleChange}
+                      onFocus={() => setFocusedField('phone')}
+                      onBlur={() => setFocusedField(null)}
+                      animate={{
+                        scale: focusedField === 'phone' ? 1.02 : 1,
+                      }}
+                      className={`w-full px-4 py-3 rounded-xl border focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all ${
+                        theme === 'light'
+                          ? 'border-gray-200 bg-white text-black'
+                          : 'border-[var(--theme-border)] bg-[var(--theme-bg-primary)] text-white'
+                      }`}
+                      placeholder="+91 9584777747"
+                      inputMode="tel"
+                      autoComplete="tel"
                     />
                   </div>
 
                   {/* Company */}
                   <div>
-                    <label htmlFor="company" className="block text-sm mb-2 text-gray-700">
+                    <label htmlFor="company" className={`block text-sm mb-2 ${
+                      theme === 'light' ? 'text-gray-700' : 'text-[var(--theme-text-secondary)]'
+                    }`}>
                       Company Name
                     </label>
                     <motion.input
@@ -185,14 +437,20 @@ export function Contact() {
                       animate={{
                         scale: focusedField === 'company' ? 1.02 : 1,
                       }}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      className={`w-full px-4 py-3 rounded-xl border focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all ${
+                        theme === 'light'
+                          ? 'border-gray-200 bg-white text-black'
+                          : 'border-[var(--theme-border)] bg-[var(--theme-bg-primary)] text-white'
+                      }`}
                       placeholder="Your Company"
                     />
                   </div>
 
                   {/* Service */}
                   <div>
-                    <label htmlFor="service" className="block text-sm mb-2 text-gray-700">
+                    <label htmlFor="service" className={`block text-sm mb-2 ${
+                      theme === 'light' ? 'text-gray-700' : 'text-[var(--theme-text-secondary)]'
+                    }`}>
                       Service Interested In *
                     </label>
                     <motion.select
@@ -206,7 +464,11 @@ export function Contact() {
                       animate={{
                         scale: focusedField === 'service' ? 1.02 : 1,
                       }}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      className={`w-full px-4 py-3 rounded-xl border focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all ${
+                        theme === 'light'
+                          ? 'border-gray-200 bg-white text-black'
+                          : 'border-[var(--theme-border)] bg-[var(--theme-bg-primary)] text-white'
+                      }`}
                     >
                       <option value="">Select a service</option>
                       <option value="cloud">Cloud Solutions</option>
@@ -222,7 +484,9 @@ export function Contact() {
 
                   {/* Message */}
                   <div>
-                    <label htmlFor="message" className="block text-sm mb-2 text-gray-700">
+                    <label htmlFor="message" className={`block text-sm mb-2 ${
+                      theme === 'light' ? 'text-gray-700' : 'text-[var(--theme-text-secondary)]'
+                    }`}>
                       Project Details *
                     </label>
                     <motion.textarea
@@ -237,19 +501,34 @@ export function Contact() {
                         scale: focusedField === 'message' ? 1.02 : 1,
                       }}
                       rows={4}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all resize-none"
+                      className={`w-full px-4 py-3 rounded-xl border focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all resize-none ${
+                        theme === 'light'
+                          ? 'border-gray-200 bg-white text-black'
+                          : 'border-[var(--theme-border)] bg-[var(--theme-bg-primary)] text-white'
+                      }`}
                       placeholder="Tell us about your project..."
                     />
                   </div>
 
                   {/* Submit Button */}
+                  {errorMessage && (
+                    <div className={`text-sm ${
+                      theme === 'light' ? 'text-red-600' : 'text-red-400'
+                    }`}>
+                      {errorMessage}
+                    </div>
+                  )}
                   <motion.button
                     type="submit"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="w-full px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-xl hover:shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 flex items-center justify-center gap-2"
+                    disabled={isSubmitting}
+                    aria-disabled={isSubmitting}
+                    className={`w-full px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-xl hover:shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 flex items-center justify-center gap-2 ${
+                      isSubmitting ? 'opacity-75' : ''
+                    }`}
                   >
-                    Send Message
+                    {submitStatus === 'sending' ? 'Sending...' : 'Send Message'}
                     <Send className="w-5 h-5" />
                   </motion.button>
                 </form>
@@ -273,7 +552,11 @@ export function Contact() {
                   animate={isInView ? { opacity: 1, y: 0 } : {}}
                   transition={{ duration: 0.5, delay: 0.5 + index * 0.1 }}
                   whileHover={{ x: 8 }}
-                  className="group bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300"
+                  className={`group rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 ${
+                    theme === 'light'
+                      ? 'bg-white border border-gray-100'
+                      : 'bg-[var(--theme-bg-secondary)] border border-[var(--theme-border)]'
+                  }`}
                 >
                   <div className="flex items-center gap-4">
                     <motion.div
@@ -284,8 +567,12 @@ export function Contact() {
                       {info.icon}
                     </motion.div>
                     <div>
-                      <div className="text-sm text-gray-500 mb-1">{info.label}</div>
-                      <div className="text-lg">{info.value}</div>
+                      <div className={`text-sm mb-1 ${
+                        theme === 'light' ? 'text-gray-500' : 'text-[var(--theme-text-secondary)]'
+                      }`}>{info.label}</div>
+                      <div className={`text-lg ${
+                        theme === 'light' ? 'text-black' : 'text-white'
+                      }`}>{info.value}</div>
                     </div>
                   </div>
                 </motion.div>
@@ -327,11 +614,19 @@ export function Contact() {
               initial={{ opacity: 0, y: 20 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5, delay: 1.3 }}
-              className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 text-center"
+              className={`rounded-2xl p-6 shadow-lg transition-colors duration-300 ${
+                theme === 'light'
+                  ? 'bg-white border border-gray-100'
+                  : 'bg-[var(--theme-bg-secondary)] border border-[var(--theme-border)]'
+              }`}
             >
               <div className="text-4xl mb-2">⚡</div>
-              <div className="text-lg mb-1">Lightning Fast Response</div>
-              <div className="text-gray-600">We typically respond within 2-4 hours</div>
+              <div className={`text-lg mb-1 ${
+                theme === 'light' ? 'text-black' : 'text-white'
+              }`}>Lightning Fast Response</div>
+              <div className={`${
+                theme === 'light' ? 'text-gray-600' : 'text-gray-300'
+              }`}>We typically respond within 2-4 hours</div>
             </motion.div>
           </motion.div>
         </div>

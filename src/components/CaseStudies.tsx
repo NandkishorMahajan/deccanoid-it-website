@@ -1,6 +1,8 @@
 import React, { useRef, useState } from 'react';
 import { motion, useInView, AnimatePresence } from 'motion/react';
 import { ArrowRight, TrendingUp, Clock, CheckCircle, X } from 'lucide-react';
+import { useTheme } from '../theme/useTheme';
+import { AnimatedBackgroundCanvas } from './background/AnimatedBackgroundCanvas';
 
 interface CaseStudy {
   id: number;
@@ -113,6 +115,7 @@ interface CaseStudyCardProps {
 }
 
 function CaseStudyCard({ study, index, onClick }: CaseStudyCardProps) {
+  const { theme } = useTheme();
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, amount: 0.3 });
 
@@ -126,7 +129,11 @@ function CaseStudyCard({ study, index, onClick }: CaseStudyCardProps) {
       className="group cursor-pointer"
       onClick={onClick}
     >
-      <div className="h-full bg-white rounded-2xl p-8 shadow-lg border border-gray-100 hover:shadow-2xl transition-all duration-300 relative overflow-hidden">
+      <div className={`h-full rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 relative overflow-hidden ${
+        theme === 'light'
+          ? 'bg-white border border-gray-100'
+          : 'bg-[var(--theme-bg-secondary)] border border-[var(--theme-border)]'
+      }`}>
         {/* Gradient overlay on hover */}
         <motion.div
           className={`absolute inset-0 bg-gradient-to-br ${study.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}
@@ -135,22 +142,32 @@ function CaseStudyCard({ study, index, onClick }: CaseStudyCardProps) {
         <div className="relative z-10">
           {/* Industry tag */}
           <div className="flex items-center justify-between mb-4">
-            <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm">
+            <span className={`px-3 py-1 rounded-full text-sm ${
+              theme === 'light'
+                ? 'bg-gray-100 text-gray-600'
+                : 'bg-[var(--theme-border)] text-[var(--theme-text-secondary)]'
+            }`}>
               {study.industry}
             </span>
             <TrendingUp className="w-5 h-5 text-green-500" />
           </div>
 
           {/* Client */}
-          <div className="text-sm text-gray-500 mb-2">{study.client}</div>
+          <div className={`text-sm mb-2 ${
+            theme === 'light' ? 'text-gray-500' : 'text-[var(--theme-text-secondary)]'
+          }`}>{study.client}</div>
 
           {/* Title */}
-          <h3 className="text-2xl mb-4 group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-cyan-500 group-hover:bg-clip-text group-hover:text-transparent transition-all">
+          <h3 className={`text-2xl mb-4 group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-cyan-500 group-hover:bg-clip-text group-hover:text-transparent transition-all ${
+            theme === 'light' ? 'text-black' : 'text-white'
+          }`}>
             {study.title}
           </h3>
 
           {/* Challenge snippet */}
-          <p className="text-gray-600 mb-6 line-clamp-2">{study.challenge}</p>
+          <p className={`mb-6 line-clamp-2 ${
+            theme === 'light' ? 'text-gray-600' : 'text-[var(--theme-text-secondary)]'
+          }`}>{study.challenge}</p>
 
           {/* Metrics */}
           <div className="grid grid-cols-3 gap-4 mb-6">
@@ -160,7 +177,9 @@ function CaseStudyCard({ study, index, onClick }: CaseStudyCardProps) {
                 <div className={`text-lg bg-gradient-to-r ${study.gradient} bg-clip-text text-transparent`}>
                   {metric.value}
                 </div>
-                <div className="text-xs text-gray-500">{metric.label}</div>
+                <div className={`text-xs ${
+                  theme === 'light' ? 'text-gray-500' : 'text-[var(--theme-text-secondary)]'
+                }`}>{metric.label}</div>
               </div>
             ))}
           </div>
@@ -168,7 +187,11 @@ function CaseStudyCard({ study, index, onClick }: CaseStudyCardProps) {
           {/* Tags */}
           <div className="flex flex-wrap gap-2 mb-6">
             {study.tags.map((tag, idx) => (
-              <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">
+              <span key={idx} className={`px-2 py-1 rounded text-xs ${
+                theme === 'light'
+                  ? 'bg-gray-100 text-gray-600'
+                  : 'bg-[var(--theme-border)] text-[var(--theme-text-secondary)]'
+              }`}>
                 {tag}
               </span>
             ))}
@@ -198,6 +221,7 @@ interface CaseStudyModalProps {
 }
 
 function CaseStudyModal({ study, onClose }: CaseStudyModalProps) {
+  const { theme } = useTheme();
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -211,7 +235,9 @@ function CaseStudyModal({ study, onClose }: CaseStudyModalProps) {
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 50 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+        className={`rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl ${
+          theme === 'light' ? 'bg-white' : 'bg-[var(--theme-bg-secondary)]'
+        }`}
       >
         {/* Header */}
         <div className={`relative bg-gradient-to-br ${study.gradient} p-8 text-white`}>
@@ -221,48 +247,66 @@ function CaseStudyModal({ study, onClose }: CaseStudyModalProps) {
           >
             <X className="w-5 h-5" />
           </button>
-          
+
           <div className="text-sm opacity-90 mb-2">{study.industry}</div>
           <h2 className="text-3xl md:text-4xl mb-2">{study.title}</h2>
           <div className="text-lg opacity-90">{study.client}</div>
         </div>
 
         {/* Content */}
-        <div className="p-8">
+        <div className={`p-8 ${
+          theme === 'light' ? '' : 'text-[var(--theme-text-primary)]'
+        }`}>
           {/* Metrics */}
           <div className="grid grid-cols-3 gap-4 mb-8">
             {study.metrics.map((metric, idx) => (
-              <div key={idx} className="text-center p-4 bg-gray-50 rounded-xl">
+              <div key={idx} className={`text-center p-4 rounded-xl ${
+                theme === 'light'
+                  ? 'bg-gray-50'
+                  : 'bg-[var(--theme-bg-primary)]'
+              }`}>
                 <div className="text-3xl mb-2">{metric.icon}</div>
                 <div className={`text-2xl mb-1 bg-gradient-to-r ${study.gradient} bg-clip-text text-transparent`}>
                   {metric.value}
                 </div>
-                <div className="text-sm text-gray-600">{metric.label}</div>
+                <div className={`text-sm ${
+                  theme === 'light' ? 'text-gray-600' : 'text-[var(--theme-text-secondary)]'
+                }`}>{metric.label}</div>
               </div>
             ))}
           </div>
 
           {/* Challenge */}
           <div className="mb-8">
-            <h3 className="text-2xl mb-3 flex items-center gap-2">
+            <h3 className={`text-2xl mb-3 flex items-center gap-2 ${
+              theme === 'light' ? 'text-black' : 'text-white'
+            }`}>
               <div className={`w-2 h-8 bg-gradient-to-b ${study.gradient} rounded-full`} />
               The Challenge
             </h3>
-            <p className="text-gray-600 text-lg">{study.challenge}</p>
+            <p className={`text-lg ${
+              theme === 'light' ? 'text-gray-600' : 'text-[var(--theme-text-secondary)]'
+            }`}>{study.challenge}</p>
           </div>
 
           {/* Solution */}
           <div className="mb-8">
-            <h3 className="text-2xl mb-3 flex items-center gap-2">
+            <h3 className={`text-2xl mb-3 flex items-center gap-2 ${
+              theme === 'light' ? 'text-black' : 'text-white'
+            }`}>
               <div className={`w-2 h-8 bg-gradient-to-b ${study.gradient} rounded-full`} />
               Our Solution
             </h3>
-            <p className="text-gray-600 text-lg">{study.solution}</p>
+            <p className={`text-lg ${
+              theme === 'light' ? 'text-gray-600' : 'text-[var(--theme-text-secondary)]'
+            }`}>{study.solution}</p>
           </div>
 
           {/* Results */}
           <div className="mb-8">
-            <h3 className="text-2xl mb-4 flex items-center gap-2">
+            <h3 className={`text-2xl mb-4 flex items-center gap-2 ${
+              theme === 'light' ? 'text-black' : 'text-white'
+            }`}>
               <div className={`w-2 h-8 bg-gradient-to-b ${study.gradient} rounded-full`} />
               Results & Impact
             </h3>
@@ -273,10 +317,14 @@ function CaseStudyModal({ study, onClose }: CaseStudyModalProps) {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: idx * 0.1 }}
-                  className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl"
+                  className={`flex items-start gap-3 p-4 rounded-xl ${
+                    theme === 'light'
+                      ? 'bg-gray-50'
+                      : 'bg-[var(--theme-bg-primary)]'
+                  }`}
                 >
                   <CheckCircle className={`w-5 h-5 mt-0.5 text-green-500 flex-shrink-0`} />
-                  <span className="text-gray-700">{result}</span>
+                  <span className={theme === 'light' ? 'text-gray-700' : 'text-[var(--theme-text-primary)]'}>{result}</span>
                 </motion.div>
               ))}
             </div>
@@ -297,6 +345,7 @@ function CaseStudyModal({ study, onClose }: CaseStudyModalProps) {
 }
 
 export function CaseStudies() {
+  const { theme } = useTheme();
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, amount: 0.2 });
   const [selectedStudy, setSelectedStudy] = useState<CaseStudy | null>(null);
@@ -304,12 +353,17 @@ export function CaseStudies() {
 
   const industries = ['All', ...Array.from(new Set(caseStudies.map(s => s.industry)))];
 
-  const filteredStudies = filter === 'All' 
-    ? caseStudies 
+  const filteredStudies = filter === 'All'
+    ? caseStudies
     : caseStudies.filter(s => s.industry === filter);
 
   return (
-    <div className="relative py-24 bg-gradient-to-b from-white to-gray-50 overflow-hidden">
+    <div className={`relative py-24 overflow-hidden transition-colors duration-300 ${
+      theme === 'light'
+        ? 'bg-gradient-to-b from-white to-gray-50'
+        : 'bg-gradient-to-b from-[var(--theme-bg-primary)] to-[var(--theme-bg-secondary)]'
+    }`}>
+      <AnimatedBackgroundCanvas intensity="subtle" />
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/3 -right-32 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl" />
@@ -329,18 +383,44 @@ export function CaseStudies() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={isInView ? { opacity: 1, scale: 1 } : {}}
             transition={{ duration: 0.5 }}
-            className="inline-block px-4 py-2 bg-green-100 text-green-600 rounded-full text-sm mb-4"
+            className={`inline-block px-4 py-2 rounded-full text-sm mb-4 ${
+              theme === 'light'
+                ? 'bg-green-100 text-green-600'
+                : 'bg-green-900/40 text-green-300'
+            }`}
           >
             Success Stories
           </motion.div>
-          <h2 className="text-4xl md:text-5xl lg:text-6xl mb-6">
+          <h2 className={`text-4xl md:text-5xl lg:text-6xl mb-6 leading-[1.15] ${
+            theme === 'light' ? 'text-black' : 'text-white'
+          }`}>
             <span className="block">Proven Results</span>
-            <span className="block bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
+
+            <span
+              className="block"
+              style={{
+                background: theme === 'light'
+                  ? 'linear-gradient(90deg, #2563eb, #22d3ee)'
+                  : 'none',
+                backgroundClip: theme === 'light' ? 'text' : 'unset',
+                WebkitBackgroundClip: theme === 'light' ? 'text' : 'unset',
+                color: theme === 'light'
+                  ? 'transparent'
+                  : '#00dcff',
+                WebkitTextFillColor: theme === 'light'
+                  ? 'transparent'
+                  : 'unset',
+                paddingBottom: '0.20em'
+              }}
+            >
               Real Impact
             </span>
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Discover how we've helped leading companies transform their operations 
+
+          <p className={`text-xl text-gray-600 max-w-3xl mx-auto ${
+            theme === 'light' ? '' : 'text-gray-300'
+          }`}>
+            Discover how we've helped leading companies transform their operations
             and achieve measurable business outcomes
           </p>
         </motion.div>
@@ -356,11 +436,12 @@ export function CaseStudies() {
             <button
               key={industry}
               onClick={() => setFilter(industry)}
-              className={`px-6 py-2 rounded-lg transition-all ${
-                filter === industry
+              className={`px-6 py-2 rounded-lg transition-all ${filter === industry
                   ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg'
-                  : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
-              }`}
+                  : theme === 'light'
+                    ? 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                    : 'bg-[var(--theme-bg-secondary)] text-[var(--theme-text-secondary)] hover:bg-[var(--theme-bg-tertiary)] border border-[var(--theme-border-primary)]'
+                }`}
             >
               {industry}
             </button>
@@ -388,7 +469,7 @@ export function CaseStudies() {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="text-center"
         >
-          <p className="text-gray-600 mb-6">
+          <p className={`mb-6 ${theme === 'light' ? 'text-gray-600' : 'text-gray-300'}`}>
             Want to become our next success story?
           </p>
           <motion.button

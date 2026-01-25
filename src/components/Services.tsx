@@ -1,16 +1,18 @@
 import React, { useRef, useState } from 'react';
 import { motion, useInView } from 'motion/react';
-import { 
-  Cloud, 
-  Code, 
-  Database, 
-  Shield, 
-  Smartphone, 
+import {
+  Cloud,
+  Code,
+  Database,
+  Shield,
+  Smartphone,
   Bot,
   Network,
   BarChart,
   ArrowRight
 } from 'lucide-react';
+import { useTheme } from '../theme/useTheme';
+import { AnimatedBackgroundCanvas } from './background/AnimatedBackgroundCanvas';
 
 interface Service {
   icon: React.ReactNode;
@@ -88,6 +90,7 @@ function ServiceCard({ service, index }: ServiceCardProps) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, amount: 0.3 });
   const [isHovered, setIsHovered] = useState(false);
+  const { theme } = useTheme();
 
   return (
     <motion.div
@@ -101,13 +104,19 @@ function ServiceCard({ service, index }: ServiceCardProps) {
     >
       {/* Card */}
       <motion.div
-        className="h-full bg-white rounded-2xl p-8 shadow-lg border border-gray-100 relative overflow-hidden"
+        className={`h-full rounded-2xl p-8 shadow-lg border relative overflow-hidden transition-colors ${
+          theme === 'light'
+            ? 'bg-white border-gray-100'
+            : 'bg-[var(--theme-bg-secondary)] border-[var(--theme-border-primary)]'
+        }`}
         whileHover={{ y: -8 }}
         transition={{ duration: 0.3 }}
       >
         {/* Gradient background on hover */}
         <motion.div
-          className={`absolute inset-0 bg-gradient-to-br ${service.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}
+          className={`absolute inset-0 bg-gradient-to-br ${service.gradient} ${
+            theme === 'light' ? 'opacity-0 group-hover:opacity-5' : 'opacity-0 group-hover:opacity-10'
+          } transition-opacity duration-300`}
         />
 
         {/* Content */}
@@ -122,10 +131,14 @@ function ServiceCard({ service, index }: ServiceCardProps) {
           </motion.div>
 
           {/* Title */}
-          <h3 className="text-2xl mb-3">{service.title}</h3>
+          <h3 className={`text-2xl mb-3 ${theme === 'light' ? 'text-gray-900' : 'text-white'}`}>
+            {service.title}
+          </h3>
 
           {/* Description */}
-          <p className="text-gray-600 mb-6">{service.description}</p>
+          <p className={`mb-6 ${theme === 'light' ? 'text-gray-600' : 'text-gray-300'}`}>
+            {service.description}
+          </p>
 
           {/* Features */}
           <ul className="space-y-2 mb-6">
@@ -135,7 +148,9 @@ function ServiceCard({ service, index }: ServiceCardProps) {
                 initial={{ opacity: 0, x: -10 }}
                 animate={isInView ? { opacity: 1, x: 0 } : {}}
                 transition={{ duration: 0.4, delay: index * 0.1 + idx * 0.1 }}
-                className="flex items-center gap-2 text-sm text-gray-600"
+                className={`flex items-center gap-2 text-sm ${
+                  theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+                }`}
               >
                 <div className={`w-1.5 h-1.5 rounded-full bg-gradient-to-r ${service.gradient}`} />
                 {feature}
@@ -154,7 +169,11 @@ function ServiceCard({ service, index }: ServiceCardProps) {
 
         {/* Hover glow effect */}
         <motion.div
-          className={`absolute -bottom-20 -right-20 w-40 h-40 bg-gradient-to-br ${service.gradient} rounded-full blur-3xl opacity-0 group-hover:opacity-20 transition-opacity duration-500`}
+          className={`absolute -bottom-20 -right-20 w-40 h-40 bg-gradient-to-br ${service.gradient} rounded-full blur-3xl ${
+            theme === 'light'
+              ? 'opacity-0 group-hover:opacity-20'
+              : 'opacity-0 group-hover:opacity-15'
+          } transition-opacity duration-500`}
         />
       </motion.div>
     </motion.div>
@@ -164,13 +183,27 @@ function ServiceCard({ service, index }: ServiceCardProps) {
 export function Services() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, amount: 0.2 });
+  const { theme } = useTheme();
 
   return (
-    <div className="relative py-24 bg-gradient-to-b from-gray-50 to-white overflow-hidden">
+    <div className={`relative py-24 overflow-hidden transition-colors duration-500 ${
+      theme === 'light'
+        ? 'bg-gradient-to-b from-gray-50 to-white'
+        : 'bg-gradient-to-b from-[var(--theme-bg-secondary)] to-[var(--theme-bg-primary)]'
+    }`}>
+      <AnimatedBackgroundCanvas intensity="subtle" />
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 -left-32 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl" />
+        <div className={`absolute top-1/4 -left-32 w-96 h-96 rounded-full blur-3xl ${
+          theme === 'light'
+            ? 'bg-blue-500/5'
+            : 'bg-blue-500/10'
+        }`} />
+        <div className={`absolute bottom-1/4 -right-32 w-96 h-96 rounded-full blur-3xl ${
+          theme === 'light'
+            ? 'bg-cyan-500/5'
+            : 'bg-cyan-500/10'
+        }`} />
       </div>
 
       <div className="max-w-7xl mx-auto px-6 relative z-10">
@@ -186,18 +219,44 @@ export function Services() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={isInView ? { opacity: 1, scale: 1 } : {}}
             transition={{ duration: 0.5 }}
-            className="inline-block px-4 py-2 bg-blue-100 text-blue-600 rounded-full text-sm mb-4"
+            className={`inline-block px-4 py-2 rounded-full text-sm mb-4 ${
+              theme === 'light'
+                ? 'bg-blue-100 text-blue-600'
+                : 'bg-blue-500/20 text-blue-300'
+            }`}
           >
             Our Services
           </motion.div>
-          <h2 className="text-4xl md:text-5xl lg:text-6xl mb-6">
+          <h2 className={`text-4xl md:text-5xl lg:text-6xl mb-6 leading-[1.15] ${
+            theme === 'light' ? 'text-gray-900' : 'text-white'
+          }`}>
             <span className="block">Enterprise Solutions</span>
-            <span className="block bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
+
+            <span
+              className="block"
+              style={{
+                background: theme === 'light'
+                  ? 'linear-gradient(90deg, #2563eb, #22d3ee)'
+                  : 'none',
+                backgroundClip: theme === 'light' ? 'text' : 'unset',
+                WebkitBackgroundClip: theme === 'light' ? 'text' : 'unset',
+                color: theme === 'light'
+                  ? 'transparent'
+                  : '#00dcff',
+                WebkitTextFillColor: theme === 'light'
+                  ? 'transparent'
+                  : 'unset',
+                paddingBottom: '0.20em'
+              }}
+            >
               Built for Scale
             </span>
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Comprehensive technology services designed to accelerate your digital transformation 
+
+          <p className={`text-xl max-w-3xl mx-auto ${
+            theme === 'light' ? 'text-gray-600' : 'text-gray-300'
+          }`}>
+            Comprehensive technology services designed to accelerate your digital transformation
             and drive measurable business outcomes
           </p>
         </motion.div>
@@ -216,14 +275,14 @@ export function Services() {
           transition={{ duration: 0.6, delay: 0.8 }}
           className="text-center mt-16"
         >
-          <p className="text-gray-600 mb-6">
+          <p className={`mb-6 ${theme === 'light' ? 'text-gray-600' : 'text-gray-300'}`}>
             Need a custom solution tailored to your business?
           </p>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
-            className="px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-xl hover:shadow-2xl hover:shadow-blue-500/50 transition-all duration-300"
+            className="px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-500 dark:from-blue-500 dark:to-cyan-400 text-white rounded-xl hover:shadow-2xl transition-all duration-300"
           >
             Discuss Your Project
           </motion.button>

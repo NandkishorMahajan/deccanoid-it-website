@@ -1,312 +1,249 @@
-import React, { useRef } from 'react';
-import { motion, useInView } from 'motion/react';
-import { Calendar, Clock, ArrowRight, TrendingUp } from 'lucide-react';
+import React, { useRef, useState, useEffect } from 'react';
+import { AnimatePresence, motion, useInView } from 'motion/react';
+import { Calendar, Clock, ArrowRight, X } from 'lucide-react';
+import { useTheme } from '../theme/useTheme';
+import { AnimatedBackgroundCanvas } from './background/AnimatedBackgroundCanvas';
+import { blogPosts, type BlogPost, type BlogContentBlock } from './blogData';
 
-interface BlogPost {
-  id: number;
-  title: string;
-  excerpt: string;
-  category: string;
-  readTime: string;
-  date: string;
-  featured: boolean;
-  gradient: string;
-}
+const BLOGS_PER_PAGE = 4;
 
-const blogPosts: BlogPost[] = [
-  {
-    id: 1,
-    title: 'The Future of AI in Enterprise: 2026 Trends and Predictions',
-    excerpt: 'Explore how artificial intelligence is reshaping enterprise operations, from intelligent automation to predictive analytics.',
-    category: 'AI & Machine Learning',
-    readTime: '8 min read',
-    date: 'Jan 5, 2026',
-    featured: true,
-    gradient: 'from-blue-600 to-cyan-500'
-  },
-  {
-    id: 2,
-    title: 'Cloud Migration Best Practices: A Complete Guide',
-    excerpt: 'Learn proven strategies for successful cloud migration, including planning, execution, and optimization techniques.',
-    category: 'Cloud Computing',
-    readTime: '12 min read',
-    date: 'Jan 3, 2026',
-    featured: true,
-    gradient: 'from-purple-600 to-pink-500'
-  },
-  {
-    id: 3,
-    title: 'Cybersecurity in the Age of Remote Work',
-    excerpt: 'How to protect your organization against emerging threats in distributed work environments.',
-    category: 'Security',
-    readTime: '6 min read',
-    date: 'Dec 28, 2025',
-    featured: false,
-    gradient: 'from-red-600 to-orange-500'
-  },
-  {
-    id: 4,
-    title: 'Building Scalable Microservices Architecture',
-    excerpt: 'A practical guide to designing and implementing microservices that scale with your business.',
-    category: 'Software Development',
-    readTime: '10 min read',
-    date: 'Dec 22, 2025',
-    featured: false,
-    gradient: 'from-green-600 to-teal-500'
-  },
-  {
-    id: 5,
-    title: 'IoT and Edge Computing: The Perfect Partnership',
-    excerpt: 'Discover how edge computing enhances IoT deployments with reduced latency and improved reliability.',
-    category: 'IoT',
-    readTime: '7 min read',
-    date: 'Dec 18, 2025',
-    featured: false,
-    gradient: 'from-indigo-600 to-blue-500'
-  },
-  {
-    id: 6,
-    title: 'Data Analytics ROI: Measuring Success',
-    excerpt: 'Key metrics and frameworks for demonstrating the business value of your data analytics initiatives.',
-    category: 'Data & Analytics',
-    readTime: '9 min read',
-    date: 'Dec 15, 2025',
-    featured: false,
-    gradient: 'from-yellow-600 to-orange-500'
-  }
-];
-
-interface BlogCardProps {
+/* ================= BLOG CARD ================= */
+function BlogCard({
+  post,
+  index,
+  onOpen,
+}: {
   post: BlogPost;
   index: number;
-  featured?: boolean;
-}
-
-function BlogCard({ post, index, featured }: BlogCardProps) {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, amount: 0.3 });
-
-  if (featured) {
-    return (
-      <motion.div
-        ref={ref}
-        initial={{ opacity: 0, y: 50 }}
-        animate={isInView ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.6, delay: index * 0.1 }}
-        whileHover={{ y: -8 }}
-        className="group cursor-pointer h-full"
-      >
-        <div className="h-full bg-white rounded-2xl overflow-hidden shadow-lg border border-gray-100 hover:shadow-2xl transition-all duration-300">
-          {/* Featured Image Area with Gradient */}
-          <div className={`relative h-64 bg-gradient-to-br ${post.gradient} overflow-hidden`}>
-            <div className="absolute inset-0 opacity-10">
-              <div className="w-full h-full" style={{
-                backgroundImage: 'linear-gradient(white 1px, transparent 1px), linear-gradient(90deg, white 1px, transparent 1px)',
-                backgroundSize: '30px 30px'
-              }} />
-            </div>
-            
-            <div className="absolute inset-0 flex items-center justify-center">
-              <motion.div
-                animate={{
-                  scale: [1, 1.2, 1],
-                  rotate: [0, 180, 360]
-                }}
-                transition={{
-                  duration: 20,
-                  repeat: Infinity,
-                  ease: "linear"
-                }}
-                className="w-32 h-32 rounded-full border-2 border-white/30"
-              />
-              <motion.div
-                animate={{
-                  scale: [1.2, 1, 1.2],
-                  rotate: [360, 180, 0]
-                }}
-                transition={{
-                  duration: 15,
-                  repeat: Infinity,
-                  ease: "linear"
-                }}
-                className="absolute w-24 h-24 rounded-full border-2 border-white/20"
-              />
-            </div>
-
-            {/* Featured Badge */}
-            <div className="absolute top-4 left-4 px-3 py-1 bg-white/90 backdrop-blur-sm text-gray-700 rounded-full text-sm flex items-center gap-1">
-              <TrendingUp className="w-3 h-3" />
-              Featured
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="p-8">
-            <div className="flex items-center gap-2 mb-3 text-sm text-gray-500">
-              <span className={`px-3 py-1 bg-gradient-to-r ${post.gradient} text-white rounded-full text-xs`}>
-                {post.category}
-              </span>
-              <span className="flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
-                {post.date}
-              </span>
-            </div>
-
-            <h3 className="text-2xl mb-3 group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-cyan-500 group-hover:bg-clip-text group-hover:text-transparent transition-all">
-              {post.title}
-            </h3>
-
-            <p className="text-gray-600 mb-4">{post.excerpt}</p>
-
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1 text-sm text-gray-500">
-                <Clock className="w-4 h-4" />
-                {post.readTime}
-              </span>
-
-              <motion.div
-                className={`flex items-center gap-2 text-sm bg-gradient-to-r ${post.gradient} bg-clip-text text-transparent`}
-              >
-                Read Article
-                <ArrowRight className="w-4 h-4 text-blue-600 group-hover:translate-x-1 transition-transform" />
-              </motion.div>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-    );
-  }
+  onOpen: (post: BlogPost) => void;
+}) {
+  const { theme } = useTheme();
+  const ref = useRef<HTMLDivElement | null>(null);
+  const isInView = useInView(ref, { once: true, amount: 0.25 });
+  const isLight = theme === 'light';
 
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, y: 50 }}
+      role="button"
+      tabIndex={0}
+      onClick={() => onOpen(post)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') onOpen(post);
+      }}
+      initial={{ opacity: 0, y: 40 }}
       animate={isInView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.6, delay: index * 0.1 }}
+      transition={{ duration: 0.5, delay: index * 0.08 }}
       whileHover={{ y: -8 }}
       className="group cursor-pointer h-full"
     >
-      <div className="h-full bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-2xl transition-all duration-300 relative overflow-hidden">
-        {/* Gradient hover effect */}
-        <motion.div
-          className={`absolute inset-0 bg-gradient-to-br ${post.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}
-        />
+      <div
+        className={`h-full rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all ${
+          isLight
+            ? 'bg-white border border-gray-100'
+            : 'bg-[var(--theme-bg-secondary)] border border-[var(--theme-border)]'
+        }`}
+      >
+        {/* ================= IMAGE BLOCK (FIXED) ================= */}
+        <div className="relative h-56 w-full flex items-center justify-center overflow-hidden">
+          {/* background for uniform look */}
+          <div
+            className={`absolute inset-0 ${
+              isLight
+                ? 'bg-gradient-to-br from-gray-100 to-gray-200'
+                : 'bg-gradient-to-br from-gray-800 to-gray-900'
+            }`}
+          />
 
-        <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-3 text-sm text-gray-500">
-            <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs">
-              {post.category}
+          {/* image (no crop) */}
+          <img
+            src={post.featuredImage}
+            alt={post.title}
+            className="relative z-10 max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = '/blog-placeholder.svg';
+            }}
+          />
+        </div>
+
+        {/* ================= CONTENT ================= */}
+        <div className="p-6 flex flex-col h-full">
+          <div
+            className={`flex items-center gap-4 text-xs mb-3 ${
+              isLight ? 'text-gray-500' : 'text-[var(--theme-text-secondary)]'
+            }`}
+          >
+            <span className="flex items-center gap-1">
+              <Calendar className="w-3.5 h-3.5" />
+              {post.date}
             </span>
             <span className="flex items-center gap-1">
-              <Calendar className="w-3 h-3" />
-              {post.date}
+              <Clock className="w-3.5 h-3.5" />
+              {post.readTime}
             </span>
           </div>
 
-          <h3 className="text-xl mb-3 group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-cyan-500 group-hover:bg-clip-text group-hover:text-transparent transition-all">
+          <h3
+            className={`text-xl mb-4 leading-snug transition-all group-hover:bg-gradient-to-r group-hover:from-blue-600 group-hover:to-cyan-500 group-hover:bg-clip-text group-hover:text-transparent ${
+              isLight ? 'text-gray-900' : 'text-white'
+            }`}
+          >
             {post.title}
           </h3>
 
-          <p className="text-gray-600 mb-4 line-clamp-2">{post.excerpt}</p>
+          <p
+            className={`text-sm leading-relaxed line-clamp-3 mb-6 ${
+              isLight ? 'text-gray-600' : 'text-[var(--theme-text-secondary)]'
+            }`}
+          >
+            {post.excerpt}
+          </p>
 
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-1 text-sm text-gray-500">
-              <Clock className="w-4 h-4" />
-              {post.readTime}
-            </span>
-
-            <motion.div
-              className="flex items-center gap-2 text-sm text-blue-600"
-            >
-              Read More
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </motion.div>
+          <div className="mt-auto flex items-center justify-between pt-4 border-t border-dashed">
+            <span className="text-sm opacity-70">Read Article</span>
+            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
           </div>
         </div>
-
-        {/* Hover glow */}
-        <motion.div
-          className={`absolute -bottom-20 -right-20 w-40 h-40 bg-gradient-to-br ${post.gradient} rounded-full blur-3xl opacity-0 group-hover:opacity-20 transition-opacity duration-500`}
-        />
       </div>
     </motion.div>
   );
 }
 
-export function Blog() {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, amount: 0.2 });
+/* ================= BLOG MODAL ================= */
+function BlogModal({
+  post,
+  onClose,
+}: {
+  post: BlogPost;
+  onClose: () => void;
+}) {
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
 
-  const featuredPosts = blogPosts.filter(post => post.featured);
-  const regularPosts = blogPosts.filter(post => !post.featured);
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
 
   return (
-    <div className="relative py-24 bg-white overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 -left-32 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl" />
-      </div>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+      className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+    >
+      <motion.div
+        onClick={(e) => e.stopPropagation()}
+        initial={{ scale: 0.96, y: 30 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.96, y: 30 }}
+        className={`w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl ${
+          isLight ? 'bg-white' : 'bg-[var(--theme-bg-secondary)]'
+        }`}
+      >
+        <div className="p-6 border-b flex justify-between items-center">
+          <h2 className="text-2xl">{post.title}</h2>
+          <button onClick={onClose}>
+            <X />
+          </button>
+        </div>
 
-      <div className="max-w-7xl mx-auto px-6 relative z-10">
-        {/* Section Header */}
-        <motion.div
-          ref={ref}
-          initial={{ opacity: 0, y: 30 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
-        >
+        <img
+          src={post.featuredImage}
+          alt={post.title}
+          className="w-full object-contain bg-black/5"
+        />
+
+        <div className="p-6 space-y-5">
+          {post.content.map((block, i) => {
+            if (block.type === 'h2') return <h2 key={i}>{block.text}</h2>;
+            if (block.type === 'ul')
+              return (
+                <ul key={i} className="list-disc ml-6">
+                  {block.items.map((it, idx) => (
+                    <li key={idx}>{it}</li>
+                  ))}
+                </ul>
+              );
+            return <p key={i}>{block.text}</p>;
+          })}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/* ================= BLOG SECTION ================= */
+export function Blog() {
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
+  const [page, setPage] = useState(1);
+  const [activePost, setActivePost] = useState<BlogPost | null>(null);
+
+  const totalPages = Math.ceil(blogPosts.length / BLOGS_PER_PAGE);
+  const visibleBlogs = blogPosts.slice(
+    (page - 1) * BLOGS_PER_PAGE,
+    page * BLOGS_PER_PAGE
+  );
+
+  return (
+    <div className={`relative py-24 ${isLight ? 'bg-white' : 'bg-[var(--theme-bg-primary)]'}`}>
+      <AnimatedBackgroundCanvas intensity="subtle" />
+
+      <div className="relative z-10 max-w-7xl mx-auto px-6">
+        <AnimatePresence mode="wait">
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={isInView ? { opacity: 1, scale: 1 } : {}}
-            transition={{ duration: 0.5 }}
-            className="inline-block px-4 py-2 bg-orange-100 text-orange-600 rounded-full text-sm mb-4"
+            key={page}
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -40 }}
+            transition={{ duration: 0.4 }}
+            className="grid md:grid-cols-2 gap-8"
           >
-            Insights & Expertise
+            {visibleBlogs.map((post, index) => (
+              <BlogCard
+                key={post.id}
+                post={post}
+                index={index}
+                onOpen={setActivePost}
+              />
+            ))}
           </motion.div>
-          <h2 className="text-4xl md:text-5xl lg:text-6xl mb-6">
-            <span className="block">Latest from</span>
-            <span className="block bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
-              Our Tech Blog
-            </span>
-          </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Stay ahead with industry insights, best practices, and thought leadership 
-            from our team of technology experts
-          </p>
-        </motion.div>
+        </AnimatePresence>
 
-        {/* Featured Posts */}
-        <div className="grid md:grid-cols-2 gap-8 mb-12">
-          {featuredPosts.map((post, index) => (
-            <BlogCard key={post.id} post={post} index={index} featured />
-          ))}
-        </div>
-
-        {/* Regular Posts */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          {regularPosts.map((post, index) => (
-            <BlogCard key={post.id} post={post} index={index + featuredPosts.length} />
-          ))}
-        </div>
-
-        {/* Bottom CTA */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="text-center"
-        >
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="px-8 py-4 bg-white text-gray-700 rounded-xl border-2 border-gray-200 hover:border-blue-400 hover:bg-gray-50 transition-all duration-300"
+        {/* PAGINATION */}
+        <div className="flex justify-center items-center gap-6 mt-14">
+          <button
+            disabled={page === 1}
+            onClick={() => setPage((p) => p - 1)}
+            className="px-6 py-3 border rounded-xl disabled:opacity-40"
           >
-            View All Articles
-          </motion.button>
-        </motion.div>
+            Prev
+          </button>
+
+          <span className="text-sm opacity-70">
+            Page {page} of {totalPages}
+          </span>
+
+          <button
+            disabled={page === totalPages}
+            onClick={() => setPage((p) => p + 1)}
+            className="px-6 py-3 border rounded-xl disabled:opacity-40"
+          >
+            Next
+          </button>
+        </div>
       </div>
+
+      <AnimatePresence>
+        {activePost && (
+          <BlogModal post={activePost} onClose={() => setActivePost(null)} />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
