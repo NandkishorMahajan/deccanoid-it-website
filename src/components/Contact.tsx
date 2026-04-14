@@ -3,6 +3,7 @@ import { motion, useInView } from 'motion/react';
 import { Mail, Phone, MapPin, Send, CheckCircle } from 'lucide-react';
 import { useTheme } from '../theme/useTheme';
 import { AnimatedBackgroundCanvas } from './background/AnimatedBackgroundCanvas';
+import { sendContactEmail } from '../services/emailService';
 
 type SubmitStatus = 'idle' | 'sending' | 'success' | 'error';
 
@@ -127,28 +128,17 @@ export function Contact() {
     const waUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappText)}`;
 
     try {
-      console.log('Sending email via backend API...');
-      const response = await fetch('http://localhost:5000/api/contact', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from_name: name,
-          from_email: email,
-          phone,
-          company: company || '—',
-          service,
-          project_details: message,
-        }),
+      console.log('Sending email via EmailJS...');
+      await sendContactEmail({
+        from_name: name,
+        from_email: email,
+        phone,
+        company: company || '—',
+        service,
+        project_details: message,
       });
 
-      if (!response.ok) {
-        throw new Error(`Server error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('Email sent successfully:', data);
+      console.log('Email sent successfully');
 
       setSubmitStatus('success');
       setSubmitted(true);
